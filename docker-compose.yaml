@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  
+
+  web:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+
+  api:
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+    command: bash -c "npx prisma migrate deploy && npm start"

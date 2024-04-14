@@ -1,0 +1,62 @@
+name: Deploy Preevy environment
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  id-token: write
+  contents: read
+
+  # Needed to write a PR comment with the environment URLs
+  pull-requests: write
+
+jobs:
+  deploy:
+    timeout-minutes: 15
+
+    # allow a single job to run per PR
+    concurrency: preevy-${{ github.event.number }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::646409139783:role/preevy-role2
+          aws-region: eu-west-1
+
+      - uses: actions/checkout@v3
+
+      - uses: livecycle/preevy-up-action@v2.4.0
+        id: preevy
+        with:
+          profile-url: s3://preevy-bucket?region=us-east-1
+          docker-compose-yaml-paths: "./docker-compose.yaml"
+      
+      - name: List files in the directory
+        run: ls -la /home/runner/work/_temp/
+
+      - name: Extract URL from JSON
+        id: extract_url
+        run: |
+          JSON_FILE=$(ls /home/runner/work/_temp/preevy_urls.*.json)
+          URL=$(jq -r '.[0].url' "${JSON_FILE}")
+          echo "::set-output name=url::$URL"
+      
+      - name: Post Environment URL to PR
+        uses: actions/github-script@v5
+        if: success()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const environmentUrl = '${{ steps.extract_url.outputs.url }}';
+            const repoName = context.repo.repo;
+            const commentBody = `🚀 Preview environment is ready! [View it here](${environmentUrl})`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: repoName,  
+              body: commentBody
+            });

@@ -1,0 +1,23 @@
+name: Test GitHub Context
+
+on:
+  workflow_dispatch:  # This allows manual trigger from the GitHub UI
+
+jobs:
+  test-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Print GitHub Context
+        run: echo "Repository name is ${{ github.repository }}"
+
+      - name: Test GitHub Script
+        uses: actions/github-script@v5
+        with:
+          script: |
+            console.log('Repo Name:', context.repo.repo);
+            console.log('Owner:', context.repo.owner);
+            console.log('Repo:', context.repo.repo);  // Prints the repository name
+            console.log('Full Name:', context.repo.owner + '/' + context.repo.repo); // Full repo name

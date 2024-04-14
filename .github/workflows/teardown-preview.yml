@@ -1,0 +1,26 @@
+name: Teardown Preevy environment
+on:
+  pull_request:
+    types:
+      - closed
+permissions:
+  id-token: write
+  contents: read
+
+  # needed to update the PR comment with the environment URLs
+  pull-requests: write
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::646409139783:role/preevy-role2
+          aws-region: eu-west-1
+
+      - uses: actions/checkout@v3
+      - uses: livecycle/preevy-down-action@v1.4.0
+        id: preevy
+        with:
+          profile-url: s3://preevy-bucket?region=us-east-1
+          docker-compose-yaml-paths: "./docker-compose.yaml"
